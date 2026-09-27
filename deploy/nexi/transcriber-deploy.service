@@ -1,0 +1,6 @@
+[Unit]
+Description=Deploy transcriber origin/main when it moved
+
+[Service]
+Type=oneshot
+ExecStart=%h/Documents/informatik/transcriber/deploy/nexi/deploy.sh

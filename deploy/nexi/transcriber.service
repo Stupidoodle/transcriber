@@ -1,0 +1,19 @@
+# Speech-to-text for the persona platform: OpenAI first, local faster-whisper fallback.
+# Loopback only (127.0.0.1:8090).
+[Unit]
+Description=Transcriber (speech-to-text: OpenAI first, local faster-whisper fallback)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+WorkingDirectory=%h/Documents/informatik/transcriber
+# The OpenAI key is shared with the WhatsApp tools: read it from there, don't copy it.
+EnvironmentFile=-%h/Documents/informatik/whatsapp-mcp/.env
+ExecStart=%h/.local/bin/uv run --frozen transcriber
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

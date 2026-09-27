@@ -1,0 +1,51 @@
+# Keeps every dependency on its newest release without anyone doing anything.
+# faster-whisper, ctranslate2 and openai are the important ones; nexi deploys main on its
+# own (deploy/nexi).
+name: Upgrade dependencies
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # daily, 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upgrade-deps
+  cancel-in-progress: false
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Upgrade the lockfile
+        id: lock
+        run: |
+          uv lock --upgrade 2>&1 | tee lock.log
+          if git diff --quiet uv.lock; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test against the locked versions
+        run: |
+          uv sync --locked
+          uv run pytest -q
+
+      - name: Commit and push
+        if: steps.lock.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          { echo "build(deps): upgrade locked dependencies"; echo; grep -E '^Updated ' lock.log || true; } > msg.txt
+          git commit -q uv.lock -F msg.txt
+          git push
