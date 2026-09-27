@@ -12,7 +12,9 @@ class Settings(BaseSettings):
 
     openai_api_key: SecretStr | None = None
     transcriber_openai_model: str = "gpt-4o-transcribe"
-    transcriber_local_model: str = "large-v3-turbo"
+    # nexi's VM exposes a generic QEMU CPU without AVX2, where large-v3-turbo runs about
+    # 4x slower than real time; small keeps up (~1x). Set large-v3-turbo on a better CPU.
+    transcriber_local_model: str = "small"
     transcriber_cpu_threads: int = 4
     transcriber_host: str = "127.0.0.1"
     transcriber_port: int = 8090

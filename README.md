@@ -3,7 +3,7 @@
 Speech-to-text for short voice notes, as a small local HTTP service. It tries
 OpenAI's transcription API first (`gpt-4o-transcribe`) and falls back to
 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) on the CPU
-(`large-v3-turbo`, int8) when the API fails. German, Swiss German and English;
+(`small`, int8; `large-v3-turbo` is more accurate on a CPU with AVX2) when the API fails. German, Swiss German and English;
 a language guess outside de/en is retried as German.
 
 ```
