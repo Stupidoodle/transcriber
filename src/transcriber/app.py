@@ -55,18 +55,23 @@ def build_app(transcriber: Transcriber, allowed_root: Path) -> Starlette:
     )
 
 
-def setup_logging(level: str) -> None:
-    """JSON log lines on stdout (the journal), and over OTLP when telemetry is on."""
+def setup_logging(level: str) -> str:
+    """JSON log lines on stdout (the journal), and over OTLP when telemetry is on.
+
+    Returns:
+        The level used: ``level`` when it names one, else INFO.
+    """
     name = level.upper() if level.upper() in logging.getLevelNamesMapping() else "INFO"
     providers = installed()
     provider = providers.logger if providers else None
     setup(name, service="transcriber", stream=sys.stdout, provider=provider)
+    return name
 
 
 def main() -> None:
     configure_telemetry()
     settings = get_settings()
-    setup_logging(settings.log_level)
+    level = setup_logging(settings.log_level)
     engines: list[Engine] = []
     if settings.openai_api_key:
         engines.append(
@@ -83,6 +88,7 @@ def main() -> None:
             app,
             host=settings.transcriber_host,
             port=settings.transcriber_port,
+            log_level=level.lower(),  # its startup lines, at the service's level
             log_config=None,  # uvicorn's lines go through the JSON handler
             access_log=False,  # the request spans and durations replace it
         )
