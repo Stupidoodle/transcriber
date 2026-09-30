@@ -16,7 +16,7 @@ class FakeModel:
         self.calls.append(kwargs)
         language = kwargs.get("language") or self.guesses[len(self.calls) - 1]
         segments = [SimpleNamespace(text=" hallo "), SimpleNamespace(text="zäme ")]
-        return iter(segments), SimpleNamespace(language=language)
+        return iter(segments), SimpleNamespace(language=language, duration=5.12)
 
 
 def _engine(model: FakeModel) -> LocalWhisperEngine:
@@ -27,6 +27,7 @@ def test_joins_segments_and_keeps_a_german_guess() -> None:
     model = FakeModel(["de"])
     result = _engine(model).transcribe(Path("/tmp/n.ogg"))
     assert (result.text, result.language, result.engine) == ("hallo zäme", "de", "local")
+    assert result.audio_seconds == 5.12
     assert len(model.calls) == 1
     assert model.calls[0]["vad_filter"] is True
 
