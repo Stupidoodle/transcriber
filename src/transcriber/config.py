@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     transcriber_port: int = 8090
     # Only files under this directory may be transcribed.
     transcriber_allowed_root: Path = Path.home()
+    # DEBUG, INFO, WARNING or ERROR for this service's own log lines.
+    log_level: str = "INFO"
 
 
 @lru_cache
