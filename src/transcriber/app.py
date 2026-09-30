@@ -1,6 +1,7 @@
 """HTTP API: POST /transcribe {"path": ...} and GET /health. Loopback only."""
 
 import logging
+import sys
 from pathlib import Path
 
 import uvicorn
@@ -14,8 +15,9 @@ from transcriber.config import get_settings
 from transcriber.engines import Engine
 from transcriber.engines.local_whisper import LocalWhisperEngine
 from transcriber.engines.openai_api import OpenAIEngine
+from transcriber.logs import setup
 from transcriber.service import Transcriber, TranscriptionError
-from transcriber.telemetry import configure_telemetry, shutdown_telemetry
+from transcriber.telemetry import configure_telemetry, installed, shutdown_telemetry
 
 
 def build_app(transcriber: Transcriber, allowed_root: Path) -> Starlette:
@@ -49,10 +51,18 @@ def build_app(transcriber: Transcriber, allowed_root: Path) -> Starlette:
     )
 
 
+def setup_logging(level: str) -> None:
+    """JSON log lines on stdout (the journal), and over OTLP when telemetry is on."""
+    name = level.upper() if level.upper() in logging.getLevelNamesMapping() else "INFO"
+    providers = installed()
+    provider = providers.logger if providers else None
+    setup(name, service="transcriber", stream=sys.stdout, provider=provider)
+
+
 def main() -> None:
     configure_telemetry()
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = get_settings()
+    setup_logging(settings.log_level)
     engines: list[Engine] = []
     if settings.openai_api_key:
         engines.append(
@@ -65,6 +75,12 @@ def main() -> None:
     )
     app = build_app(Transcriber(engines), settings.transcriber_allowed_root)
     try:
-        uvicorn.run(app, host=settings.transcriber_host, port=settings.transcriber_port)
+        uvicorn.run(
+            app,
+            host=settings.transcriber_host,
+            port=settings.transcriber_port,
+            log_config=None,  # uvicorn's lines go through the JSON handler
+            access_log=False,  # the request spans and durations replace it
+        )
     finally:
         shutdown_telemetry()

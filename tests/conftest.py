@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING
 
@@ -57,3 +58,14 @@ def telemetry() -> Iterator[Telemetry]:
     _TELEMETRY.clear()
     yield _TELEMETRY
     _TELEMETRY.clear()
+
+
+@pytest.fixture
+def restore_logging() -> Iterator[None]:
+    """Put the root and package loggers back the way the test found them."""
+    root, package = logging.getLogger(), logging.getLogger("transcriber")
+    handlers, level, package_level = root.handlers[:], root.level, package.level
+    yield
+    root.handlers[:] = handlers
+    root.setLevel(level)
+    package.setLevel(package_level)
