@@ -15,6 +15,7 @@ from transcriber.engines import Engine
 from transcriber.engines.local_whisper import LocalWhisperEngine
 from transcriber.engines.openai_api import OpenAIEngine
 from transcriber.service import Transcriber, TranscriptionError
+from transcriber.telemetry import configure_telemetry, shutdown_telemetry
 
 
 def build_app(transcriber: Transcriber, allowed_root: Path) -> Starlette:
@@ -49,6 +50,7 @@ def build_app(transcriber: Transcriber, allowed_root: Path) -> Starlette:
 
 
 def main() -> None:
+    configure_telemetry()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = get_settings()
     engines: list[Engine] = []
@@ -62,4 +64,7 @@ def main() -> None:
         LocalWhisperEngine(settings.transcriber_local_model, settings.transcriber_cpu_threads)
     )
     app = build_app(Transcriber(engines), settings.transcriber_allowed_root)
-    uvicorn.run(app, host=settings.transcriber_host, port=settings.transcriber_port)
+    try:
+        uvicorn.run(app, host=settings.transcriber_host, port=settings.transcriber_port)
+    finally:
+        shutdown_telemetry()
