@@ -17,4 +17,10 @@ class OpenAIEngine:
     def transcribe(self, path: Path) -> Transcript:
         with path.open("rb") as audio:
             result = self._client.audio.transcriptions.create(model=self._model, file=audio)
-        return Transcript(text=result.text.strip(), engine=self.name, model=self._model)
+        # Models billed by audio length report it; token-billed ones (gpt-4o-transcribe) don't.
+        usage = getattr(result, "usage", None)
+        by_length = getattr(usage, "type", "") == "duration"
+        seconds: float | None = getattr(usage, "seconds", None) if by_length else None
+        return Transcript(
+            text=result.text.strip(), engine=self.name, model=self._model, audio_seconds=seconds
+        )

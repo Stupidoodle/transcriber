@@ -34,12 +34,18 @@ class LocalWhisperEngine:
         with self._lock:
             if self._model is None:
                 self._model = self._load()
-            text, language = self._run(path, language=None)
+            text, language, seconds = self._run(path, language=None)
             if language not in EXPECTED_LANGUAGES:
-                text, language = self._run(path, language="de")
-        return Transcript(text=text, engine=self.name, model=self._model_name, language=language)
+                text, language, seconds = self._run(path, language="de")
+        return Transcript(
+            text=text,
+            engine=self.name,
+            model=self._model_name,
+            language=language,
+            audio_seconds=seconds,
+        )
 
-    def _run(self, path: Path, language: str | None) -> tuple[str, str]:
+    def _run(self, path: Path, language: str | None) -> tuple[str, str, float | None]:
         segments, info = self._model.transcribe(
             str(path),
             language=language,
@@ -48,4 +54,5 @@ class LocalWhisperEngine:
             beam_size=5,
         )
         text = " ".join(s.text.strip() for s in segments).strip()
-        return text, language or info.language
+        seconds = getattr(info, "duration", None)
+        return text, language or info.language, float(seconds) if seconds is not None else None

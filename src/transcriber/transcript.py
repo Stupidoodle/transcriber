@@ -9,3 +9,4 @@ class Transcript:
     engine: str  # which engine produced it, e.g. "openai" or "local"
     model: str
     language: str | None = None
+    audio_seconds: float | None = None  # length of the audio, when the engine reports it

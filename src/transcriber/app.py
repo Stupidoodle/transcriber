@@ -7,6 +7,7 @@ from pathlib import Path
 import uvicorn
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
@@ -15,6 +16,7 @@ from transcriber.config import get_settings
 from transcriber.engines import Engine
 from transcriber.engines.local_whisper import LocalWhisperEngine
 from transcriber.engines.openai_api import OpenAIEngine
+from transcriber.http_telemetry import HttpServerTelemetry
 from transcriber.logs import setup
 from transcriber.service import Transcriber, TranscriptionError
 from transcriber.telemetry import configure_telemetry, installed, shutdown_telemetry
@@ -47,7 +49,9 @@ def build_app(transcriber: Transcriber, allowed_root: Path) -> Starlette:
         return JSONResponse({"ok": True, "engines": [e.name for e in transcriber.engines]})
 
     return Starlette(
-        routes=[Route("/transcribe", transcribe, methods=["POST"]), Route("/health", health)]
+        routes=[Route("/transcribe", transcribe, methods=["POST"]), Route("/health", health)],
+        # One SERVER span per request, continuing the caller's trace, and its duration.
+        middleware=[Middleware(HttpServerTelemetry)],
     )
 
 
