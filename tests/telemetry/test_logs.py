@@ -107,7 +107,7 @@ def test_the_service_logs_to_stdout_and_ships_logs_when_on(
 ) -> None:
     providers = Providers(None, None, _logs.get_logger_provider())  # type: ignore[arg-type]
     with patch("transcriber.app.installed", return_value=providers):
-        setup_logging("chatty")  # an unknown level falls back to INFO
+        assert setup_logging("chatty") == "INFO"  # an unknown level falls back to INFO
     logging.getLogger("transcriber").info("up")
     logging.getLogger("transcriber").debug("hidden")
     captured = capsys.readouterr()
