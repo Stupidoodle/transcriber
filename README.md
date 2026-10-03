@@ -33,6 +33,9 @@ caller's `traceparent`, with one child span per engine try (`transcribe openai`,
 `deployment.environment.name=prod`, a 15 s metric interval and no OTLP logs (the journal
 has them).
 
+[docs/observability.md](docs/observability.md) has every name and label, how to read
+the fallback from the metrics, and runbook queries.
+
 `deploy/nexi/` has the systemd user units: the service, and a 15-minute timer that
 deploys a moved `main`. A daily GitHub Action upgrades the locked dependencies and
 pushes only when the tests pass.
